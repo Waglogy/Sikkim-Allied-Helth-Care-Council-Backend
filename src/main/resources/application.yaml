@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: sikkim_allied_health_care_council
+
+
+  datasource:
+    url: jdbc:postgresql://localhost:5434/sikkim_allied_health_care_council
+    username: waglogy
+    password: "0000"
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
