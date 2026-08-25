@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sikkim Allied Health Care Council — API Reference</title>
+<style>
+  :root{
+    --bg:#0f1420; --panel:#161d2b; --panel2:#1c2536; --line:#2a3547;
+    --text:#e6ebf2; --muted:#9aa7bd; --accent:#4f9cf9; --green:#3fb950;
+    --amber:#d29922; --red:#f85149; --purple:#a371f7; --code:#0b1020;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.6;font-size:15px}
+  header{padding:36px 24px 24px;background:linear-gradient(135deg,#1a2740,#101725);
+    border-bottom:1px solid var(--line)}
+  .wrap{max-width:980px;margin:0 auto;padding:0 24px}
+  h1{margin:0 0 6px;font-size:28px}
+  h2{font-size:20px;margin:40px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+  .sub{color:var(--muted);margin:0}
+  .meta{margin-top:16px;display:flex;flex-wrap:wrap;gap:8px}
+  .chip{background:var(--panel2);border:1px solid var(--line);color:var(--muted);
+    padding:4px 10px;border-radius:20px;font-size:12.5px}
+  .chip b{color:var(--text)}
+  a{color:var(--accent)}
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:16px 20px;margin:24px 0}
+  .toc ul{margin:8px 0 0;padding-left:18px}
+  .toc li{margin:3px 0}
+  .endpoint{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    margin:20px 0;overflow:hidden}
+  .ep-head{display:flex;align-items:center;gap:12px;padding:14px 18px;
+    background:var(--panel2);border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .verb{font-weight:700;font-size:12.5px;padding:4px 10px;border-radius:6px;color:#fff;letter-spacing:.5px}
+  .post{background:#1f6feb}
+  .get{background:#238636}
+  .path{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:15px;font-weight:600}
+  .ep-desc{padding:14px 18px 4px;color:var(--muted)}
+  .ep-body{padding:6px 18px 18px}
+  .lbl{font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);
+    margin:16px 0 6px;font-weight:700}
+  pre{background:var(--code);border:1px solid var(--line);border-radius:8px;
+    padding:14px 16px;overflow-x:auto;margin:0}
+  code{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:13px}
+  pre code{color:#c9d4e5}
+  .k{color:#79c0ff}      /* key */
+  .s{color:#a5d6ff}      /* string */
+  .n{color:#ffa657}      /* number */
+  .b{color:#d2a8ff}      /* boolean/null */
+  .c{color:#6e7d92}      /* comment */
+  table{width:100%;border-collapse:collapse;margin:6px 0 4px;font-size:13.5px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+  td code{background:var(--code);padding:1px 6px;border-radius:4px;color:#a5d6ff}
+  .req{color:var(--red);font-weight:700}
+  .opt{color:var(--muted)}
+  .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:5px;
+    border:1px solid var(--line);background:var(--panel2)}
+  .badge.auth{color:var(--amber);border-color:#4a3b1a}
+  .badge.public{color:var(--green);border-color:#1a3a22}
+  .note{background:#1d2333;border-left:3px solid var(--amber);border-radius:6px;
+    padding:12px 16px;margin:16px 0;color:var(--muted)}
+  .note b{color:var(--text)}
+  footer{color:var(--muted);text-align:center;padding:30px;font-size:12.5px;margin-top:40px;
+    border-top:1px solid var(--line)}
+  .status-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+  .st{font-size:12.5px;padding:3px 9px;border-radius:6px;border:1px solid var(--line);background:var(--panel2)}
+  .st.ok{color:var(--green)} .st.bad{color:var(--amber)} .st.err{color:var(--red)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>Sikkim Allied Health Care Council</h1>
+    <p class="sub">Backend REST API Reference</p>
+    <div class="meta">
+      <span class="chip">Base URL: <b>http://localhost:8080</b></span>
+      <span class="chip">Framework: <b>Spring Boot 4.1</b></span>
+      <span class="chip">Content-Type: <b>application/json</b></span>
+      <span class="chip">Endpoints: <b>5</b></span>
+      <span class="chip">Generated: <b>2026-08-24</b></span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="note">
+    <b>Authentication state.</b> Security is <em>stateless</em> and configured as an OAuth2 resource server.
+    Only <code>/api/auth/**</code> is public — <b>every other endpoint requires authentication</b>.
+    Note: the codebase currently exposes <code>POST /api/auth/signup</code> only; there is no login /
+    token-issuing endpoint yet, so the protected routes below cannot be reached until one is added.
+  </div>
+
+  <div class="toc">
+    <b>Endpoints</b>
+    <ul>
+      <li><a href="#signup">POST /api/auth/signup</a> — Register an admin user <span class="badge public">public</span></li>
+      <li><a href="#member">POST /api/member</a> — Create a member <span class="badge auth">auth</span></li>
+      <li><a href="#event">POST /api/event</a> — Create an event <span class="badge auth">auth</span></li>
+      <li><a href="#message">POST /api/message</a> — Create a message <span class="badge auth">auth</span></li>
+      <li><a href="#publication">POST /api/publication</a> — Create a publication <span class="badge auth">auth</span></li>
+    </ul>
+  </div>
+
+  <!-- ================= RESPONSE ENVELOPE ================= -->
+  <h2>Standard response shapes</h2>
+  <p class="sub">All successful responses are wrapped in a common envelope. <code>null</code> fields are omitted from the JSON.</p>
+
+  <div class="lbl">Success envelope — <code>ApiResponse&lt;T&gt;</code></div>
+<pre><code><span class="b">{</span>
+  <span class="k">"success"</span>: <span class="b">true</span>,
+  <span class="k">"message"</span>: <span class="s">"Human readable message"</span>,
+  <span class="k">"data"</span>: <span class="c">{ /* endpoint-specific payload (T) */ }</span>,
+  <span class="k">"timestamp"</span>: <span class="s">"2026-08-24T10:15:30.482Z"</span>
+<span class="b">}</span></code></pre>
+
+  <div class="lbl">Validation error — <code>ApiError</code> (HTTP 400)</div>
+<pre><code><span class="b">{</span>
+  <span class="k">"success"</span>: <span class="b">false</span>,
+  <span class="k">"message"</span>: <span class="s">"Validation failed"</span>,
+  <span class="k">"errors"</span>: <span class="b">{</span>
+    <span class="k">"email"</span>: <span class="s">"email must be a valid email address."</span>,
+    <span class="k">"password"</span>: <span class="s">"password must be at least 8 characters long."</span>
+  <span class="b">}</span>
+<span class="b">}</span></code></pre>
+
+  <div class="lbl">Other error responses</div>
+  <div class="status-list">
+    <span class="st bad">404 Not Found — <code>ResourceNotFoundException</code> → <code>{ success:false, message, errors:{} }</code></span>
+    <span class="st err">409 Conflict — <code>DuplicateResourceException</code> → <code>{ success:false, message, errors:{} }</code></span>
+  </div>
+
+  <!-- ================= AUTH: SIGNUP ================= -->
+  <h2 id="signup">1. Register an admin user</h2>
+  <div class="endpoint">
+    <div class="ep-head">
+      <span class="verb post">POST</span>
+      <span class="path">/api/auth/signup</span>
+      <span class="badge public">public</span>
+    </div>
+    <div class="ep-desc">Creates a new admin account. The password is encoded before storage; the response never includes the password or internal id.</div>
+    <div class="ep-body">
+
+      <div class="lbl">Request body — fields</div>
+      <table>
+        <tr><th>Field</th><th>Type</th><th>Required</th><th>Rules</th></tr>
+        <tr><td><code>name</code></td><td>string</td><td class="req">required</td><td>not blank</td></tr>
+        <tr><td><code>email</code></td><td>string</td><td class="req">required</td><td>not blank · valid email</td></tr>
+        <tr><td><code>password</code></td><td>string</td><td class="req">required</td><td>min 8 characters</td></tr>
+        <tr><td><code>role</code></td><td>enum</td><td class="req">required</td><td><code>SUPER_ADMIN</code> · <code>ADMIN</code> · <code>MODERATOR</code></td></tr>
+      </table>
+
+      <div class="lbl">Request JSON</div>
+<pre><code><span class="b">{</span>
+  <span class="k">"name"</span>: <span class="s">"Anita Sharma"</span>,
+  <span class="k">"email"</span>: <span class="s">"anita@sahcc.in"</span>,
+  <span class="k">"password"</span>: <span class="s">"Secret123"</span>,
+  <span class="k">"role"</span>: <span class="s">"ADMIN"</span>
+<span class="b">}</span></code></pre>
+
+      <div class="lbl">Response — 201 Created</div>
+<pre><code><span class="b">{</span>
+  <span class="k">"success"</span>: <span class="b">true</span>,
+  <span class="k">"message"</span>: <span class="s">"Admin signup successful."</span>,
+  <span class="k">"data"</span>: <span class="b">{</span>
+    <span class="k">"uuid"</span>: <span class="s">"3f7c1e2a-9b40-4d1e-8a2c-1f2b3c4d5e6f"</span>,
+    <span class="k">"name"</span>: <span class="s">"Anita Sharma"</span>,
+    <span class="k">"email"</span>: <span class="s">"anita@sahcc.in"</span>,
+    <span class="k">"role"</span>: <span class="s">"ADMIN"</span>
+  <span class="b">}</span>,
+  <span class="k">"timestamp"</span>: <span class="s">"2026-08-24T10:15:30.482Z"</span>
+<span class="b">}</span></code></pre>
+    </div>
+  </div>
+
+  <!-- ================= MEMBER ================= -->
+  <h2 id="member">2. Create a member</h2>
+  <div class="endpoint">
+    <div class="ep-head">
+      <span class="verb post">POST</span>
+      <span class="path">/api/member</span>
+      <span class="badge auth">auth required</span>
+    </div>
+    <div class="ep-desc">Creates a council member profile. Only <code>name</code> and <code>designation</code> are accepted on input; <code>photo</code>, <code>profileDescription</code> and <code>orderPriority</code> default (null / null / 0) and appear in the response.</div>
+    <div class="ep-body">
+
+      <div class="lbl">Request body — fields</div>
+      <table>
+        <tr><th>Field</th><th>Type</th><th>Required</th><th>Rules</th></tr>
+        <tr><td><code>name</code></td><td>string</td><td class="req">required</td><td>not blank</td></tr>
+        <tr><td><code>designation</code></td><td>string</td><td class="req">required</td><td>not blank</td></tr>
+      </table>
+
+      <div class="lbl">Request JSON</div>
+<pre><code><span class="b">{</span>
+  <span class="k">"name"</span>: <span class="s">"Dr. Tenzing Bhutia"</span>,
+  <span class="k">"designation"</span>: <span class="s">"Registrar"</span>
+<span class="b">}</span></code></pre>
+
+      <div class="lbl">Response — 201 Created</div>
+<pre><code><span class="b">{</span>
+  <span class="k">"success"</span>: <span class="b">true</span>,
+  <span class="k">"message"</span>: <span class="s">"Member created successfully"</span>,
+  <span class="k">"data"</span>: <span class="b">{</span>
+    <span class="k">"uuid"</span>: <span class="s">"a1b2c3d4-e5f6-7890-abcd-ef1234567890"</span>,
+    <span class="k">"name"</span>: <span class="s">"Dr. Tenzing Bhutia"</span>,
+    <span class="k">"designation"</span>: <span class="s">"Registrar"</span>,
+    <span class="k">"photo"</span>: <span class="b">null</span>,
+    <span class="k">"profileDescription"</span>: <span class="b">null</span>,
+    <span class="k">"orderPriority"</span>: <span class="n">0</span>
+  <span class="b">}</span>,
+  <span class="k">"timestamp"</span>: <span class="s">"2026-08-24T10:15:30.482Z"</span>
+<span class="b">}</span></code></pre>
+    </div>
+  </div>
+
+  <!-- ================= EVENT ================= -->
+  <h2 id="event">3. Create an event</h2>
+  <div class="endpoint">
+    <div class="ep-head">
+      <span class="verb post">POST</span>
+      <span class="path">/api/event</span>
+      <span class="badge auth">auth required</span>
+    </div>
+    <div class="ep-desc">Creates an event announcement. <code>createdBy</code> is the UUID of the admin author.</div>
+    <div class="ep-body">
+
+      <div class="lbl">Request body — fields</div>
+      <table>
+        <tr><th>Field</th><th>Type</th><th>Required</th><th>Rules</th></tr>
+        <tr><td><code>name</code></td><td>string</td><td class="req">required</td><td>not blank</td></tr>
+        <tr><td><code>description</code></td><td>string</td><td class="opt">optional</td><td>—</td></tr>
+        <tr><td><code>eventDate</code></td><td>datetime (LocalDateTime)</td><td class="req">required</td><td>e.g. <code>2026-09-01T09:30:00</code></td></tr>
+        <tr><td><code>images</code></td><td>string[]</td><td class="opt">optional</td><td>list of URLs/paths</td></tr>
+        <tr><td><code>documents</code></td><td>string[]</td><td class="opt">optional</td><td>list of URLs/paths</td></tr>
+        <tr><td><code>createdBy</code></td><td>UUID</td><td class="req">required</td><td>admin uuid</td></tr>
+      </table>
+
+      <div class="lbl">Request JSON</div>
+<pre><code><span class="b">{</span>
+  <span class="k">"name"</span>: <span class="s">"Annual Health Conclave 2026"</span>,
+  <span class="k">"description"</span>: <span class="s">"State-level allied health professionals meet."</span>,
+  <span class="k">"eventDate"</span>: <span class="s">"2026-09-01T09:30:00"</span>,
+  <span class="k">"images"</span>: [<span class="s">"https://cdn.sahcc.in/img/conclave-1.jpg"</span>],
+  <span class="k">"documents"</span>: [<span class="s">"https://cdn.sahcc.in/doc/agenda.pdf"</span>],
+  <span class="k">"createdBy"</span>: <span class="s">"3f7c1e2a-9b40-4d1e-8a2c-1f2b3c4d5e6f"</span>
+<span class="b">}</span></code></pre>
+
+      <div class="lbl">Response — 201 Created</div>
+<pre><code><span class="b">{</span>
+  <span class="k">"success"</span>: <span class="b">true</span>,
+  <span class="k">"message"</span>: <span class="s">"Event created successfully"</span>,
+  <span class="k">"data"</span>: <span class="b">{</span>
+    <span class="k">"uuid"</span>: <span class="s">"9c8b7a6d-5e4f-3210-9876-543210fedcba"</span>,
+    <span class="k">"name"</span>: <span class="s">"Annual Health Conclave 2026"</span>,
+    <span class="k">"description"</span>: <span class="s">"State-level allied health professionals meet."</span>,
+    <span class="k">"eventDate"</span>: <span class="s">"2026-09-01T09:30:00"</span>,
+    <span class="k">"images"</span>: [<span class="s">"https://cdn.sahcc.in/img/conclave-1.jpg"</span>],
+    <span class="k">"documents"</span>: [<span class="s">"https://cdn.sahcc.in/doc/agenda.pdf"</span>],
+    <span class="k">"createdBy"</span>: <span class="s">"3f7c1e2a-9b40-4d1e-8a2c-1f2b3c4d5e6f"</span>,
+    <span class="k">"createdAt"</span>: <span class="s">"2026-08-24T10:15:30.482Z"</span>,
+    <span class="k">"updatedAt"</span>: <span class="s">"2026-08-24T10:15:30.482Z"</span>
+  <span class="b">}</span>,
+  <span class="k">"timestamp"</span>: <span class="s">"2026-08-24T10:15:30.482Z"</span>
+<span class="b">}</span></code></pre>
+    </div>
+  </div>
+
+  <!-- ================= MESSAGE ================= -->
+  <h2 id="message">4. Create a message</h2>
+  <div class="endpoint">
+    <div class="ep-head">
+      <span class="verb post">POST</span>
+      <span class="path">/api/message</span>
+      <span class="badge auth">auth required</span>
+    </div>
+    <div class="ep-desc">Creates a message announcement (e.g. a notice or circular).</div>
+    <div class="ep-body">
+
+      <div class="lbl">Request body — fields</div>
+      <table>
+        <tr><th>Field</th><th>Type</th><th>Required</th><th>Rules</th></tr>
+        <tr><td><code>title</code></td><td>string</td><td class="req">required</td><td>not blank</td></tr>
+        <tr><td><code>description</code></td><td>string</td><td class="opt">optional</td><td>—</td></tr>
+        <tr><td><code>publishDate</code></td><td>datetime (LocalDateTime)</td><td class="opt">optional</td><td>e.g. <code>2026-08-25T08:00:00</code></td></tr>
+        <tr><td><code>fileUpload</code></td><td>string</td><td class="opt">optional</td><td>file URL/path</td></tr>
+        <tr><td><code>publishStatus</code></td><td>boolean</td><td class="opt">optional</td><td>defaults to <code>false</code></td></tr>
+        <tr><td><code>createdBy</code></td><td>UUID</td><td class="req">required</td><td>admin uuid</td></tr>
+      </table>
+
+      <div class="lbl">Request JSON</div>
+<pre><code><span class="b">{</span>
+  <span class="k">"title"</span>: <span class="s">"Registration renewal notice"</span>,
+  <span class="k">"description"</span>: <span class="s">"All members must renew before Sept 30."</span>,
+  <span class="k">"publishDate"</span>: <span class="s">"2026-08-25T08:00:00"</span>,
+  <span class="k">"fileUpload"</span>: <span class="s">"https://cdn.sahcc.in/doc/renewal-notice.pdf"</span>,
+  <span class="k">"publishStatus"</span>: <span class="b">true</span>,
+  <span class="k">"createdBy"</span>: <span class="s">"3f7c1e2a-9b40-4d1e-8a2c-1f2b3c4d5e6f"</span>
+<span class="b">}</span></code></pre>
+
+      <div class="lbl">Response — 201 Created</div>
+<pre><code><span class="b">{</span>
+  <span class="k">"success"</span>: <span class="b">true</span>,
+  <span class="k">"message"</span>: <span class="s">"Message created successfully"</span>,
+  <span class="k">"data"</span>: <span class="b">{</span>
+    <span class="k">"uuid"</span>: <span class="s">"11112222-3333-4444-5555-666677778888"</span>,
+    <span class="k">"title"</span>: <span class="s">"Registration renewal notice"</span>,
+    <span class="k">"description"</span>: <span class="s">"All members must renew before Sept 30."</span>,
+    <span class="k">"publishDate"</span>: <span class="s">"2026-08-25T08:00:00"</span>,
+    <span class="k">"fileUpload"</span>: <span class="s">"https://cdn.sahcc.in/doc/renewal-notice.pdf"</span>,
+    <span class="k">"publishStatus"</span>: <span class="b">true</span>,
+    <span class="k">"createdBy"</span>: <span class="s">"3f7c1e2a-9b40-4d1e-8a2c-1f2b3c4d5e6f"</span>,
+    <span class="k">"createdAt"</span>: <span class="s">"2026-08-24T10:15:30.482Z"</span>,
+    <span class="k">"updatedAt"</span>: <span class="s">"2026-08-24T10:15:30.482Z"</span>
+  <span class="b">}</span>,
+  <span class="k">"timestamp"</span>: <span class="s">"2026-08-24T10:15:30.482Z"</span>
+<span class="b">}</span></code></pre>
+    </div>
+  </div>
+
+  <!-- ================= PUBLICATION ================= -->
+  <h2 id="publication">5. Create a publication</h2>
+  <div class="endpoint">
+    <div class="ep-head">
+      <span class="verb post">POST</span>
+      <span class="path">/api/publication</span>
+      <span class="badge auth">auth required</span>
+    </div>
+    <div class="ep-desc">Creates a publication announcement. Same shape as message.</div>
+    <div class="ep-body">
+
+      <div class="lbl">Request body — fields</div>
+      <table>
+        <tr><th>Field</th><th>Type</th><th>Required</th><th>Rules</th></tr>
+        <tr><td><code>title</code></td><td>string</td><td class="req">required</td><td>not blank</td></tr>
+        <tr><td><code>description</code></td><td>string</td><td class="opt">optional</td><td>—</td></tr>
+        <tr><td><code>publishDate</code></td><td>datetime (LocalDateTime)</td><td class="opt">optional</td><td>e.g. <code>2026-08-26T12:00:00</code></td></tr>
+        <tr><td><code>fileUpload</code></td><td>string</td><td class="opt">optional</td><td>file URL/path</td></tr>
+        <tr><td><code>publishStatus</code></td><td>boolean</td><td class="opt">optional</td><td>defaults to <code>false</code></td></tr>
+        <tr><td><code>createdBy</code></td><td>UUID</td><td class="req">required</td><td>admin uuid</td></tr>
+      </table>
+
+      <div class="lbl">Request JSON</div>
+<pre><code><span class="b">{</span>
+  <span class="k">"title"</span>: <span class="s">"Journal of Allied Health — Vol. 4"</span>,
+  <span class="k">"description"</span>: <span class="s">"Quarterly research publication."</span>,
+  <span class="k">"publishDate"</span>: <span class="s">"2026-08-26T12:00:00"</span>,
+  <span class="k">"fileUpload"</span>: <span class="s">"https://cdn.sahcc.in/doc/journal-v4.pdf"</span>,
+  <span class="k">"publishStatus"</span>: <span class="b">false</span>,
+  <span class="k">"createdBy"</span>: <span class="s">"3f7c1e2a-9b40-4d1e-8a2c-1f2b3c4d5e6f"</span>
+<span class="b">}</span></code></pre>
+
+      <div class="lbl">Response — 201 Created</div>
+<pre><code><span class="b">{</span>
+  <span class="k">"success"</span>: <span class="b">true</span>,
+  <span class="k">"message"</span>: <span class="s">"Publication created successfully"</span>,
+  <span class="k">"data"</span>: <span class="b">{</span>
+    <span class="k">"uuid"</span>: <span class="s">"99998888-7777-6666-5555-444433332222"</span>,
+    <span class="k">"title"</span>: <span class="s">"Journal of Allied Health — Vol. 4"</span>,
+    <span class="k">"description"</span>: <span class="s">"Quarterly research publication."</span>,
+    <span class="k">"publishDate"</span>: <span class="s">"2026-08-26T12:00:00"</span>,
+    <span class="k">"fileUpload"</span>: <span class="s">"https://cdn.sahcc.in/doc/journal-v4.pdf"</span>,
+    <span class="k">"publishStatus"</span>: <span class="b">false</span>,
+    <span class="k">"createdBy"</span>: <span class="s">"3f7c1e2a-9b40-4d1e-8a2c-1f2b3c4d5e6f"</span>,
+    <span class="k">"createdAt"</span>: <span class="s">"2026-08-24T10:15:30.482Z"</span>,
+    <span class="k">"updatedAt"</span>: <span class="s">"2026-08-24T10:15:30.482Z"</span>
+  <span class="b">}</span>,
+  <span class="k">"timestamp"</span>: <span class="s">"2026-08-24T10:15:30.482Z"</span>
+<span class="b">}</span></code></pre>
+    </div>
+  </div>
+
+  <div class="note" style="border-left-color:var(--accent)">
+    <b>Data type notes.</b>
+    <code>uuid</code> / <code>createdBy</code> are UUID strings ·
+    <code>timestamp</code>, <code>createdAt</code>, <code>updatedAt</code> are ISO-8601 <b>Instant</b> (UTC, with <code>Z</code>) ·
+    <code>eventDate</code> / <code>publishDate</code> are <b>LocalDateTime</b> (no zone / no <code>Z</code>).
+  </div>
+
+</div>
+
+<footer>
+  Generated from source · Sikkim Allied Health Care Council Backend · 5 endpoints · 2026-08-24
+</footer>
+
+</body>
+</html>
