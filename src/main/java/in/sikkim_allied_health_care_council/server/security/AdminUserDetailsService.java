@@ -29,7 +29,7 @@ public class AdminUserDetailsService implements UserDetailsService {
                         )
                 );
 
-        return User.withUsername(admin.getName())
+        return User.withUsername(admin.getEmail())
                 .password(admin.getPassword())
                 .roles(admin.getRole().name())
                 .build();
