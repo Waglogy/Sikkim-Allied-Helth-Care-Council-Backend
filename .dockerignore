@@ -1,0 +1,17 @@
+# The image only needs the prebuilt jar, so keep the build context tiny.
+.git
+.github
+.gradle
+src
+gradle
+gradlew
+gradlew.bat
+build.gradle.kts
+settings.gradle.kts
+*.md
+*.html
+.env
+.env.example
+run.sh
+# Keep the one thing we actually COPY:
+!build/libs/app.jar

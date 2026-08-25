@@ -4,9 +4,10 @@ spring:
 
 
   datasource:
-    url: jdbc:postgresql://localhost:5434/sikkim_allied_health_care_council
-    username: waglogy
-    password: "0000"
+    # Single connection URL with credentials embedded as query params
+    # (?user=…&password=…), overridable via DB_URL for deployment. Falls back
+    # to local dev values when DB_URL is unset.
+    url: ${DB_URL:jdbc:postgresql://localhost:5434/sikkim_allied_health_care_council?user=waglogy&password=0000}
     driver-class-name: org.postgresql.Driver
 
   jpa:

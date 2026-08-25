@@ -44,3 +44,8 @@ dependencies {
 tasks.withType<Test> {
 	useJUnitPlatform()
 }
+
+// Deterministic artifact name so the Dockerfile can COPY build/libs/app.jar.
+tasks.bootJar {
+	archiveFileName.set("app.jar")
+}
