@@ -2,11 +2,10 @@ package in.sikkim_allied_health_care_council.server.services.announcements;
 
 import in.sikkim_allied_health_care_council.server.dto.announcements.CreatePublication;
 import in.sikkim_allied_health_care_council.server.dto.announcements.PublicationResponse;
-import in.sikkim_allied_health_care_council.server.exceptions.ResourceNotFoundException;
 import in.sikkim_allied_health_care_council.server.models.admin.AdminUser;
 import in.sikkim_allied_health_care_council.server.models.announcements.Publications;
-import in.sikkim_allied_health_care_council.server.repositories.AdminUserRepository;
 import in.sikkim_allied_health_care_council.server.repositories.PublicationRepository;
+import in.sikkim_allied_health_care_council.server.security.CurrentAdminProvider;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
 
@@ -14,17 +13,16 @@ import org.springframework.stereotype.Service;
 public class PublicationService {
 
     private final PublicationRepository publicationRepository;
-    private final AdminUserRepository adminUserRepository;
+    private final CurrentAdminProvider currentAdminProvider;
 
-    public PublicationService(PublicationRepository publicationRepository, AdminUserRepository adminUserRepository) {
+    public PublicationService(PublicationRepository publicationRepository, CurrentAdminProvider currentAdminProvider) {
         this.publicationRepository = publicationRepository;
-        this.adminUserRepository = adminUserRepository;
+        this.currentAdminProvider = currentAdminProvider;
     }
 
     public PublicationResponse createPublication(@Valid CreatePublication createPublication) {
 
-        AdminUser createdBy = adminUserRepository.findByUuid(createPublication.createdBy())
-                .orElseThrow(() -> new ResourceNotFoundException("Admin user not found."));
+        AdminUser createdBy = currentAdminProvider.getCurrentAdmin();
 
         Publications publication = Publications.builder()
                 .title(createPublication.title())

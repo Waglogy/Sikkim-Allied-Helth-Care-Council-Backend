@@ -2,11 +2,10 @@ package in.sikkim_allied_health_care_council.server.services.announcements;
 
 import in.sikkim_allied_health_care_council.server.dto.announcements.CreateEvent;
 import in.sikkim_allied_health_care_council.server.dto.announcements.EventResponse;
-import in.sikkim_allied_health_care_council.server.exceptions.ResourceNotFoundException;
 import in.sikkim_allied_health_care_council.server.models.admin.AdminUser;
 import in.sikkim_allied_health_care_council.server.models.announcements.Events;
-import in.sikkim_allied_health_care_council.server.repositories.AdminUserRepository;
 import in.sikkim_allied_health_care_council.server.repositories.EventRepository;
+import in.sikkim_allied_health_care_council.server.security.CurrentAdminProvider;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
 
@@ -14,17 +13,16 @@ import org.springframework.stereotype.Service;
 public class EventService {
 
     private final EventRepository eventRepository;
-    private final AdminUserRepository adminUserRepository;
+    private final CurrentAdminProvider currentAdminProvider;
 
-    public EventService(EventRepository eventRepository, AdminUserRepository adminUserRepository) {
+    public EventService(EventRepository eventRepository, CurrentAdminProvider currentAdminProvider) {
         this.eventRepository = eventRepository;
-        this.adminUserRepository = adminUserRepository;
+        this.currentAdminProvider = currentAdminProvider;
     }
 
     public EventResponse createEvent(@Valid CreateEvent createEvent) {
 
-        AdminUser createdBy = adminUserRepository.findByUuid(createEvent.createdBy())
-                .orElseThrow(() -> new ResourceNotFoundException("Admin user not found."));
+        AdminUser createdBy = currentAdminProvider.getCurrentAdmin();
 
         Events event = Events.builder()
                 .name(createEvent.name())

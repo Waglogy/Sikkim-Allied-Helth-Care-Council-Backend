@@ -5,7 +5,6 @@ import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 public record CreateEvent(
 
@@ -19,9 +18,6 @@ public record CreateEvent(
 
         List<String> images,
 
-        List<String> documents,
-
-        @NotNull(message = "createdBy is required.")
-        UUID createdBy
+        List<String> documents
 ) {
 }
