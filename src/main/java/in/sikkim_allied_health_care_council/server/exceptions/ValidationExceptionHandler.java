@@ -7,6 +7,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -76,6 +77,34 @@ public class ValidationExceptionHandler {
                 .body(new ApiError(
                         false,
                         "Invalid email or password.",
+                        Map.of()
+                ));
+    }
+
+    @ExceptionHandler(InvalidFileException.class)
+    public ResponseEntity<ApiError> handleInvalidFile(
+            InvalidFileException exception
+    ) {
+
+        return ResponseEntity
+                .badRequest()
+                .body(new ApiError(
+                        false,
+                        exception.getMessage(),
+                        Map.of()
+                ));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiError> handleMaxUploadSize(
+            MaxUploadSizeExceededException exception
+    ) {
+
+        return ResponseEntity
+                .badRequest()
+                .body(new ApiError(
+                        false,
+                        "File exceeds the 10 MB limit.",
                         Map.of()
                 ));
     }

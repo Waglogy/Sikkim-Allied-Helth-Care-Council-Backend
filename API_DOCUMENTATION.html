@@ -36,6 +36,8 @@
   .verb{font-weight:700;font-size:12.5px;padding:4px 10px;border-radius:6px;color:#fff;letter-spacing:.5px}
   .post{background:#1f6feb}
   .get{background:#238636}
+  .put{background:#8957e5}
+  .delete{background:#cf222e}
   .path{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:15px;font-weight:600}
   .ep-desc{padding:14px 18px 4px;color:var(--muted)}
   .ep-body{padding:6px 18px 18px}
@@ -80,8 +82,8 @@
       <span class="chip">Base URL: <b>http://localhost:8080</b></span>
       <span class="chip">Framework: <b>Spring Boot 4.1</b></span>
       <span class="chip">Content-Type: <b>application/json</b></span>
-      <span class="chip">Endpoints: <b>5</b></span>
-      <span class="chip">Generated: <b>2026-08-24</b></span>
+      <span class="chip">Endpoints: <b>34</b></span>
+      <span class="chip">Generated: <b>2026-08-25</b></span>
     </div>
   </div>
 </header>
@@ -89,20 +91,42 @@
 <div class="wrap">
 
   <div class="note">
-    <b>Authentication state.</b> Security is <em>stateless</em> and configured as an OAuth2 resource server.
-    Only <code>/api/auth/**</code> is public — <b>every other endpoint requires authentication</b>.
-    Note: the codebase currently exposes <code>POST /api/auth/signup</code> only; there is no login /
-    token-issuing endpoint yet, so the protected routes below cannot be reached until one is added.
+    <b>Authentication.</b> Security is <em>stateless</em> and configured as an OAuth2 resource server
+    validating self-issued JWTs (HS256). Public routes: <code>/api/auth/**</code>, <code>/error</code>,
+    <code>GET /api/files/**</code> (serving uploaded files) and <code>GET /api/category/**</code> (the public
+    council directory). <b>Every other endpoint requires a valid token</b>. Obtain a token from
+    <a href="#login">POST /api/auth/login</a>, then send it on protected requests as:
+    <br><code>Authorization: Bearer &lt;token&gt;</code>
+    <br>Tokens are signed with subject = admin email, carry a <code>roles</code> claim, and expire after
+    <code>app.jwt.expiration-minutes</code> (configurable).
   </div>
 
   <div class="toc">
     <b>Endpoints</b>
     <ul>
       <li><a href="#signup">POST /api/auth/signup</a> — Register an admin user <span class="badge public">public</span></li>
+      <li><a href="#login">POST /api/auth/login</a> — Log in &amp; obtain a JWT <span class="badge public">public</span></li>
       <li><a href="#member">POST /api/member</a> — Create a member <span class="badge auth">auth</span></li>
       <li><a href="#event">POST /api/event</a> — Create an event <span class="badge auth">auth</span></li>
       <li><a href="#message">POST /api/message</a> — Create a message <span class="badge auth">auth</span></li>
       <li><a href="#publication">POST /api/publication</a> — Create a publication <span class="badge auth">auth</span></li>
+      <li><a href="#get-members">GET /api/member</a> · <a href="#get-members">GET /api/member/{uuid}</a> — List / fetch members <span class="badge auth">auth</span></li>
+      <li><a href="#get-events">GET /api/event</a> · <a href="#get-events">GET /api/event/{uuid}</a> — List / fetch events <span class="badge auth">auth</span></li>
+      <li><a href="#get-messages">GET /api/message</a> · <a href="#get-messages">GET /api/message/{uuid}</a> — List / fetch messages <span class="badge auth">auth</span></li>
+      <li><a href="#get-publications">GET /api/publication</a> · <a href="#get-publications">GET /api/publication/{uuid}</a> — List / fetch publications <span class="badge auth">auth</span></li>
+      <li><a href="#put-member">PUT /api/member/{uuid}</a> — Update a member <span class="badge auth">auth</span></li>
+      <li><a href="#put-event">PUT /api/event/{uuid}</a> — Update an event <span class="badge auth">auth</span></li>
+      <li><a href="#put-message">PUT /api/message/{uuid}</a> — Update a message <span class="badge auth">auth</span></li>
+      <li><a href="#put-publication">PUT /api/publication/{uuid}</a> — Update a publication <span class="badge auth">auth</span></li>
+      <li><a href="#delete-endpoints">DELETE /api/member/{uuid}</a> — Delete a member <span class="badge auth">auth</span></li>
+      <li><a href="#delete-endpoints">DELETE /api/event/{uuid}</a> — Delete an event <span class="badge auth">auth</span></li>
+      <li><a href="#delete-endpoints">DELETE /api/message/{uuid}</a> — Delete a message <span class="badge auth">auth</span></li>
+      <li><a href="#delete-endpoints">DELETE /api/publication/{uuid}</a> — Delete a publication <span class="badge auth">auth</span></li>
+      <li><a href="#upload">POST /api/upload</a> — Upload an image / PDF <span class="badge auth">auth</span></li>
+      <li><a href="#files">GET /api/files/**</a> — Serve an uploaded file <span class="badge public">public</span></li>
+      <li><a href="#notification">POST · GET · PUT · DELETE /api/notification</a> — Notification (title + PDF) <span class="badge auth">auth</span></li>
+      <li><a href="#category">POST · PUT · DELETE /api/category</a> — Manage member categories <span class="badge auth">auth</span></li>
+      <li><a href="#category">GET /api/category</a> · <a href="#category">GET /api/category/{uuid}</a> — Council directory (grouped) <span class="badge public">public</span></li>
     </ul>
   </div>
 
@@ -130,6 +154,7 @@
 
   <div class="lbl">Other error responses</div>
   <div class="status-list">
+    <span class="st err">401 Unauthorized — missing/invalid/expired JWT on a protected route</span>
     <span class="st bad">404 Not Found — <code>ResourceNotFoundException</code> → <code>{ success:false, message, errors:{} }</code></span>
     <span class="st err">409 Conflict — <code>DuplicateResourceException</code> → <code>{ success:false, message, errors:{} }</code></span>
   </div>
@@ -177,15 +202,67 @@
     </div>
   </div>
 
+  <!-- ================= AUTH: LOGIN ================= -->
+  <h2 id="login">2. Log in &amp; obtain a JWT</h2>
+  <div class="endpoint">
+    <div class="ep-head">
+      <span class="verb post">POST</span>
+      <span class="path">/api/auth/login</span>
+      <span class="badge public">public</span>
+    </div>
+    <div class="ep-desc">Authenticates an admin with email + password and returns a signed JWT plus the admin profile. Send the returned <code>token</code> as <code>Authorization: Bearer &lt;token&gt;</code> on all protected endpoints.</div>
+    <div class="ep-body">
+
+      <div class="lbl">Request body — fields</div>
+      <table>
+        <tr><th>Field</th><th>Type</th><th>Required</th><th>Rules</th></tr>
+        <tr><td><code>email</code></td><td>string</td><td class="req">required</td><td>not blank · valid email</td></tr>
+        <tr><td><code>password</code></td><td>string</td><td class="req">required</td><td>not blank</td></tr>
+      </table>
+
+      <div class="lbl">Request JSON</div>
+<pre><code><span class="b">{</span>
+  <span class="k">"email"</span>: <span class="s">"anita@sahcc.in"</span>,
+  <span class="k">"password"</span>: <span class="s">"Secret123"</span>
+<span class="b">}</span></code></pre>
+
+      <div class="lbl">Response — 200 OK</div>
+<pre><code><span class="b">{</span>
+  <span class="k">"success"</span>: <span class="b">true</span>,
+  <span class="k">"message"</span>: <span class="s">"Login successful."</span>,
+  <span class="k">"data"</span>: <span class="b">{</span>
+    <span class="k">"token"</span>: <span class="s">"eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzaWtraW0t...&lt;jwt&gt;"</span>,
+    <span class="k">"admin"</span>: <span class="b">{</span>
+      <span class="k">"uuid"</span>: <span class="s">"3f7c1e2a-9b40-4d1e-8a2c-1f2b3c4d5e6f"</span>,
+      <span class="k">"name"</span>: <span class="s">"Anita Sharma"</span>,
+      <span class="k">"email"</span>: <span class="s">"anita@sahcc.in"</span>,
+      <span class="k">"role"</span>: <span class="s">"ADMIN"</span>
+    <span class="b">}</span>
+  <span class="b">}</span>,
+  
+
+
+  <span class="k">"timestamp"</span>: <span class="s">"2026-08-25T10:15:30.482Z"</span>
+<span class="b">}</span></code></pre>
+
+      <div class="note">
+        <b>Using the token.</b> The JWT is HS256-signed with <code>subject</code> = admin email and a
+        <code>roles</code> claim. Include it on every protected request:
+        <br><code>Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...</code>
+        <br>Invalid credentials return <span class="badge">401 Unauthorized</span>.
+      </div>
+    </div>
+  </div>
+
   <!-- ================= MEMBER ================= -->
-  <h2 id="member">2. Create a member</h2>
+  <h2 id="member">3. Create a member</h2>
   <div class="endpoint">
     <div class="ep-head">
       <span class="verb post">POST</span>
       <span class="path">/api/member</span>
       <span class="badge auth">auth required</span>
     </div>
-    <div class="ep-desc">Creates a council member profile. Only <code>name</code> and <code>designation</code> are accepted on input; <code>photo</code>, <code>profileDescription</code> and <code>orderPriority</code> default (null / null / 0) and appear in the response.</div>
+    <div class="ep-desc">Creates a council member profile. A member has a photo, name, designation, a free-text description, a display <code>priority</code> and may belong to a <a href="#category">category</a> (via <code>categoryUuid</code>). The response echoes the category as <code>categoryUuid</code> + <code>categoryName</code>.</div>
     <div class="ep-body">
 
       <div class="lbl">Request body — fields</div>
@@ -193,12 +270,20 @@
         <tr><th>Field</th><th>Type</th><th>Required</th><th>Rules</th></tr>
         <tr><td><code>name</code></td><td>string</td><td class="req">required</td><td>not blank</td></tr>
         <tr><td><code>designation</code></td><td>string</td><td class="req">required</td><td>not blank</td></tr>
+        <tr><td><code>photo</code></td><td>string</td><td class="opt">optional</td><td>image URL (from <a href="#upload">/api/upload</a>)</td></tr>
+        <tr><td><code>description</code></td><td>string</td><td class="opt">optional</td><td>—</td></tr>
+        <tr><td><code>priority</code></td><td>int</td><td class="opt">optional</td><td>order within category · defaults to <code>0</code></td></tr>
+        <tr><td><code>categoryUuid</code></td><td>UUID</td><td class="opt">optional</td><td>category to list under</td></tr>
       </table>
 
       <div class="lbl">Request JSON</div>
 <pre><code><span class="b">{</span>
-  <span class="k">"name"</span>: <span class="s">"Dr. Tenzing Bhutia"</span>,
-  <span class="k">"designation"</span>: <span class="s">"Registrar"</span>
+  <span class="k">"name"</span>: <span class="s">"Ms. Chokie Lepcha"</span>,
+  <span class="k">"designation"</span>: <span class="s">"Sr. Medical Lab Technologist"</span>,
+  <span class="k">"photo"</span>: <span class="s">"http://localhost:8080/api/files/uploads/img/…png"</span>,
+  <span class="k">"description"</span>: <span class="s">"Department of Pathology, STNM Multispeciality Hospital, Gangtok"</span>,
+  <span class="k">"priority"</span>: <span class="n">1</span>,
+  <span class="k">"categoryUuid"</span>: <span class="s">"9513f842-d4f5-402f-87a6-f1e444d4b5c7"</span>
 <span class="b">}</span></code></pre>
 
       <div class="lbl">Response — 201 Created</div>
@@ -207,19 +292,22 @@
   <span class="k">"message"</span>: <span class="s">"Member created successfully"</span>,
   <span class="k">"data"</span>: <span class="b">{</span>
     <span class="k">"uuid"</span>: <span class="s">"a1b2c3d4-e5f6-7890-abcd-ef1234567890"</span>,
-    <span class="k">"name"</span>: <span class="s">"Dr. Tenzing Bhutia"</span>,
-    <span class="k">"designation"</span>: <span class="s">"Registrar"</span>,
-    <span class="k">"photo"</span>: <span class="b">null</span>,
-    <span class="k">"profileDescription"</span>: <span class="b">null</span>,
-    <span class="k">"orderPriority"</span>: <span class="n">0</span>
+    <span class="k">"name"</span>: <span class="s">"Ms. Chokie Lepcha"</span>,
+    <span class="k">"designation"</span>: <span class="s">"Sr. Medical Lab Technologist"</span>,
+    <span class="k">"photo"</span>: <span class="s">"http://localhost:8080/api/files/uploads/img/…png"</span>,
+    <span class="k">"description"</span>: <span class="s">"Department of Pathology, STNM Multispeciality Hospital, Gangtok"</span>,
+    <span class="k">"priority"</span>: <span class="n">1</span>,
+    <span class="k">"categoryUuid"</span>: <span class="s">"9513f842-d4f5-402f-87a6-f1e444d4b5c7"</span>,
+    <span class="k">"categoryName"</span>: <span class="s">"Medical Laboratory &amp; Life Sciences"</span>
   <span class="b">}</span>,
   <span class="k">"timestamp"</span>: <span class="s">"2026-08-24T10:15:30.482Z"</span>
 <span class="b">}</span></code></pre>
+      <p class="sub" style="margin-top:10px">The list / fetch / update / delete routes (<code>GET /api/member</code>, <code>GET&nbsp;/api/member/{uuid}</code>, <code>PUT</code>, <code>DELETE</code>) use the same shape.</p>
     </div>
   </div>
 
   <!-- ================= EVENT ================= -->
-  <h2 id="event">3. Create an event</h2>
+  <h2 id="event">4. Create an event</h2>
   <div class="endpoint">
     <div class="ep-head">
       <span class="verb post">POST</span>
@@ -271,7 +359,7 @@
   </div>
 
   <!-- ================= MESSAGE ================= -->
-  <h2 id="message">4. Create a message</h2>
+  <h2 id="message">5. Create a message</h2>
   <div class="endpoint">
     <div class="ep-head">
       <span class="verb post">POST</span>
@@ -287,9 +375,10 @@
         <tr><td><code>title</code></td><td>string</td><td class="req">required</td><td>not blank</td></tr>
         <tr><td><code>description</code></td><td>string</td><td class="opt">optional</td><td>—</td></tr>
         <tr><td><code>publishDate</code></td><td>datetime (LocalDateTime)</td><td class="opt">optional</td><td>e.g. <code>2026-08-25T08:00:00</code></td></tr>
+        <tr><td><code>photo</code></td><td>string</td><td class="opt">optional</td><td>image URL (from <a href="#upload">/api/upload</a>)</td></tr>
         <tr><td><code>fileUpload</code></td><td>string</td><td class="opt">optional</td><td>file URL/path</td></tr>
         <tr><td><code>publishStatus</code></td><td>boolean</td><td class="opt">optional</td><td>defaults to <code>false</code></td></tr>
-        <tr><td><code>createdBy</code></td><td>UUID</td><td class="req">required</td><td>admin uuid</td></tr>
+        <tr><td><code>createdBy</code></td><td>UUID</td><td class="opt">optional</td><td>ignored — set from the signed-in admin</td></tr>
       </table>
 
       <div class="lbl">Request JSON</div>
@@ -297,9 +386,9 @@
   <span class="k">"title"</span>: <span class="s">"Registration renewal notice"</span>,
   <span class="k">"description"</span>: <span class="s">"All members must renew before Sept 30."</span>,
   <span class="k">"publishDate"</span>: <span class="s">"2026-08-25T08:00:00"</span>,
+  <span class="k">"photo"</span>: <span class="s">"http://localhost:8080/api/files/uploads/img/…png"</span>,
   <span class="k">"fileUpload"</span>: <span class="s">"https://cdn.sahcc.in/doc/renewal-notice.pdf"</span>,
-  <span class="k">"publishStatus"</span>: <span class="b">true</span>,
-  <span class="k">"createdBy"</span>: <span class="s">"3f7c1e2a-9b40-4d1e-8a2c-1f2b3c4d5e6f"</span>
+  <span class="k">"publishStatus"</span>: <span class="b">true</span>
 <span class="b">}</span></code></pre>
 
       <div class="lbl">Response — 201 Created</div>
@@ -311,6 +400,7 @@
     <span class="k">"title"</span>: <span class="s">"Registration renewal notice"</span>,
     <span class="k">"description"</span>: <span class="s">"All members must renew before Sept 30."</span>,
     <span class="k">"publishDate"</span>: <span class="s">"2026-08-25T08:00:00"</span>,
+    <span class="k">"photo"</span>: <span class="s">"http://localhost:8080/api/files/uploads/img/…png"</span>,
     <span class="k">"fileUpload"</span>: <span class="s">"https://cdn.sahcc.in/doc/renewal-notice.pdf"</span>,
     <span class="k">"publishStatus"</span>: <span class="b">true</span>,
     <span class="k">"createdBy"</span>: <span class="s">"3f7c1e2a-9b40-4d1e-8a2c-1f2b3c4d5e6f"</span>,
@@ -323,7 +413,7 @@
   </div>
 
   <!-- ================= PUBLICATION ================= -->
-  <h2 id="publication">5. Create a publication</h2>
+  <h2 id="publication">6. Create a publication</h2>
   <div class="endpoint">
     <div class="ep-head">
       <span class="verb post">POST</span>
@@ -374,6 +464,446 @@
     </div>
   </div>
 
+  <!-- ================= READ ENDPOINTS ================= -->
+  <h2>Read endpoints (GET)</h2>
+  <p class="sub">Each resource exposes a <b>list</b> (all records) and a <b>fetch-by-uuid</b> route.
+  Both require authentication. List payloads are arrays wrapped in the standard envelope;
+  an unknown <code>{uuid}</code> returns <span class="badge">404 Not Found</span>. The item shape
+  matches the corresponding create response above.</p>
+
+  <!-- ---------- GET members ---------- -->
+  <h2 id="get-members">7. List &amp; fetch members</h2>
+  <div class="endpoint">
+    <div class="ep-head">
+      <span class="verb get">GET</span>
+      <span class="path">/api/member</span>
+      <span class="badge auth">auth required</span>
+    </div>
+    <div class="ep-desc">Returns all members, ordered by <code>orderPriority</code> ascending, then <code>name</code>.</div>
+    <div class="ep-body">
+      <div class="lbl">Response — 200 OK</div>
+<pre><code><span class="b">{</span>
+  <span class="k">"success"</span>: <span class="b">true</span>,
+  <span class="k">"message"</span>: <span class="s">"Members fetched successfully"</span>,
+  <span class="k">"data"</span>: [
+    <span class="b">{</span>
+      <span class="k">"uuid"</span>: <span class="s">"a1b2c3d4-e5f6-7890-abcd-ef1234567890"</span>,
+      <span class="k">"name"</span>: <span class="s">"Dr. Tenzing Bhutia"</span>,
+      <span class="k">"designation"</span>: <span class="s">"Registrar"</span>,
+      <span class="k">"photo"</span>: <span class="b">null</span>,
+      <span class="k">"profileDescription"</span>: <span class="b">null</span>,
+      <span class="k">"orderPriority"</span>: <span class="n">0</span>
+    <span class="b">}</span>
+  ],
+  <span class="k">"timestamp"</span>: <span class="s">"2026-08-25T10:15:30.482Z"</span>
+<span class="b">}</span></code></pre>
+    </div>
+  </div>
+  <div class="endpoint">
+    <div class="ep-head">
+      <span class="verb get">GET</span>
+      <span class="path">/api/member/{uuid}</span>
+      <span class="badge auth">auth required</span>
+    </div>
+    <div class="ep-desc">Fetches a single member by UUID. <code>data</code> is one <code>MemberResponse</code> (same shape as a list item). Returns 404 if not found.</div>
+  </div>
+
+  <!-- ---------- GET events ---------- -->
+  <h2 id="get-events">8. List &amp; fetch events</h2>
+  <div class="endpoint">
+    <div class="ep-head">
+      <span class="verb get">GET</span>
+      <span class="path">/api/event</span>
+      <span class="badge auth">auth required</span>
+    </div>
+    <div class="ep-desc">Returns all events, newest <code>eventDate</code> first.</div>
+    <div class="ep-body">
+      <div class="lbl">Response — 200 OK</div>
+<pre><code><span class="b">{</span>
+  <span class="k">"success"</span>: <span class="b">true</span>,
+  <span class="k">"message"</span>: <span class="s">"Events fetched successfully"</span>,
+  <span class="k">"data"</span>: [
+    <span class="b">{</span>
+      <span class="k">"uuid"</span>: <span class="s">"9c8b7a6d-5e4f-3210-9876-543210fedcba"</span>,
+      <span class="k">"name"</span>: <span class="s">"Annual Health Conclave 2026"</span>,
+      <span class="k">"description"</span>: <span class="s">"State-level allied health professionals meet."</span>,
+      <span class="k">"eventDate"</span>: <span class="s">"2026-09-01T09:30:00"</span>,
+      <span class="k">"images"</span>: [<span class="s">"https://cdn.sahcc.in/img/conclave-1.jpg"</span>],
+      <span class="k">"documents"</span>: [<span class="s">"https://cdn.sahcc.in/doc/agenda.pdf"</span>],
+      <span class="k">"createdBy"</span>: <span class="s">"3f7c1e2a-9b40-4d1e-8a2c-1f2b3c4d5e6f"</span>,
+      <span class="k">"createdAt"</span>: <span class="s">"2026-08-24T10:15:30.482Z"</span>,
+      <span class="k">"updatedAt"</span>: <span class="s">"2026-08-24T10:15:30.482Z"</span>
+    <span class="b">}</span>
+  ],
+  <span class="k">"timestamp"</span>: <span class="s">"2026-08-25T10:15:30.482Z"</span>
+<span class="b">}</span></code></pre>
+    </div>
+  </div>
+  <div class="endpoint">
+    <div class="ep-head">
+      <span class="verb get">GET</span>
+      <span class="path">/api/event/{uuid}</span>
+      <span class="badge auth">auth required</span>
+    </div>
+    <div class="ep-desc">Fetches a single event by UUID. <code>data</code> is one <code>EventResponse</code>. Returns 404 if not found.</div>
+  </div>
+
+  <!-- ---------- GET messages ---------- -->
+  <h2 id="get-messages">9. List &amp; fetch messages</h2>
+  <div class="endpoint">
+    <div class="ep-head">
+      <span class="verb get">GET</span>
+      <span class="path">/api/message</span>
+      <span class="badge auth">auth required</span>
+    </div>
+    <div class="ep-desc">Returns all messages, newest <code>createdAt</code> first.</div>
+    <div class="ep-body">
+      <div class="lbl">Response — 200 OK</div>
+<pre><code><span class="b">{</span>
+  <span class="k">"success"</span>: <span class="b">true</span>,
+  <span class="k">"message"</span>: <span class="s">"Messages fetched successfully"</span>,
+  <span class="k">"data"</span>: [
+    <span class="b">{</span>
+      <span class="k">"uuid"</span>: <span class="s">"11112222-3333-4444-5555-666677778888"</span>,
+      <span class="k">"title"</span>: <span class="s">"Registration renewal notice"</span>,
+      <span class="k">"description"</span>: <span class="s">"All members must renew before Sept 30."</span>,
+      <span class="k">"publishDate"</span>: <span class="s">"2026-08-25T08:00:00"</span>,
+      <span class="k">"fileUpload"</span>: <span class="s">"https://cdn.sahcc.in/doc/renewal-notice.pdf"</span>,
+      <span class="k">"publishStatus"</span>: <span class="b">true</span>,
+      <span class="k">"createdBy"</span>: <span class="s">"3f7c1e2a-9b40-4d1e-8a2c-1f2b3c4d5e6f"</span>,
+      <span class="k">"createdAt"</span>: <span class="s">"2026-08-24T10:15:30.482Z"</span>,
+      <span class="k">"updatedAt"</span>: <span class="s">"2026-08-24T10:15:30.482Z"</span>
+    <span class="b">}</span>
+  ],
+  <span class="k">"timestamp"</span>: <span class="s">"2026-08-25T10:15:30.482Z"</span>
+<span class="b">}</span></code></pre>
+    </div>
+  </div>
+  <div class="endpoint">
+    <div class="ep-head">
+      <span class="verb get">GET</span>
+      <span class="path">/api/message/{uuid}</span>
+      <span class="badge auth">auth required</span>
+    </div>
+    <div class="ep-desc">Fetches a single message by UUID. <code>data</code> is one <code>MessageResponse</code>. Returns 404 if not found.</div>
+  </div>
+
+  <!-- ---------- GET publications ---------- -->
+  <h2 id="get-publications">10. List &amp; fetch publications</h2>
+  <div class="endpoint">
+    <div class="ep-head">
+      <span class="verb get">GET</span>
+      <span class="path">/api/publication</span>
+      <span class="badge auth">auth required</span>
+    </div>
+    <div class="ep-desc">Returns all publications, newest <code>createdAt</code> first.</div>
+    <div class="ep-body">
+      <div class="lbl">Response — 200 OK</div>
+<pre><code><span class="b">{</span>
+  <span class="k">"success"</span>: <span class="b">true</span>,
+  <span class="k">"message"</span>: <span class="s">"Publications fetched successfully"</span>,
+  <span class="k">"data"</span>: [
+    <span class="b">{</span>
+      <span class="k">"uuid"</span>: <span class="s">"99998888-7777-6666-5555-444433332222"</span>,
+      <span class="k">"title"</span>: <span class="s">"Journal of Allied Health — Vol. 4"</span>,
+      <span class="k">"description"</span>: <span class="s">"Quarterly research publication."</span>,
+      <span class="k">"publishDate"</span>: <span class="s">"2026-08-26T12:00:00"</span>,
+      <span class="k">"fileUpload"</span>: <span class="s">"https://cdn.sahcc.in/doc/journal-v4.pdf"</span>,
+      <span class="k">"publishStatus"</span>: <span class="b">false</span>,
+      <span class="k">"createdBy"</span>: <span class="s">"3f7c1e2a-9b40-4d1e-8a2c-1f2b3c4d5e6f"</span>,
+      <span class="k">"createdAt"</span>: <span class="s">"2026-08-24T10:15:30.482Z"</span>,
+      <span class="k">"updatedAt"</span>: <span class="s">"2026-08-24T10:15:30.482Z"</span>
+    <span class="b">}</span>
+  ],
+  <span class="k">"timestamp"</span>: <span class="s">"2026-08-25T10:15:30.482Z"</span>
+<span class="b">}</span></code></pre>
+    </div>
+  </div>
+  <div class="endpoint">
+    <div class="ep-head">
+      <span class="verb get">GET</span>
+      <span class="path">/api/publication/{uuid}</span>
+      <span class="badge auth">auth required</span>
+    </div>
+    <div class="ep-desc">Fetches a single publication by UUID. <code>data</code> is one <code>PublicationResponse</code>. Returns 404 if not found.</div>
+  </div>
+
+  <!-- ================= UPDATE ENDPOINTS ================= -->
+  <h2>Update endpoints (PUT)</h2>
+  <p class="sub">Each resource can be replaced by UUID. The <b>request body is identical to the
+  matching create route</b> (full replace — send all fields); the response is the updated
+  entity wrapped in the standard envelope. An unknown <code>{uuid}</code> returns
+  <span class="badge">404 Not Found</span>, and invalid fields return
+  <span class="badge">400</span>. <code>createdBy</code>, <code>createdAt</code> and the internal id are
+  preserved; <code>updatedAt</code> is refreshed automatically.</p>
+
+  <!-- ---------- PUT member ---------- -->
+  <h2 id="put-member">11. Update a member</h2>
+  <div class="endpoint">
+    <div class="ep-head">
+      <span class="verb put">PUT</span>
+      <span class="path">/api/member/{uuid}</span>
+      <span class="badge auth">auth required</span>
+    </div>
+    <div class="ep-desc">Replaces a member. Body is the same as <a href="#member">POST /api/member</a> (<code>name</code>, <code>designation</code>).</div>
+    <div class="ep-body">
+      <div class="lbl">Request JSON</div>
+<pre><code><span class="b">{</span>
+  <span class="k">"name"</span>: <span class="s">"Dr. Tenzing Bhutia"</span>,
+  <span class="k">"designation"</span>: <span class="s">"Chief Registrar"</span>
+<span class="b">}</span></code></pre>
+      <div class="lbl">Response — 200 OK</div>
+<pre><code><span class="b">{</span>
+  <span class="k">"success"</span>: <span class="b">true</span>,
+  <span class="k">"message"</span>: <span class="s">"Member updated successfully"</span>,
+  <span class="k">"data"</span>: <span class="c">{ /* updated MemberResponse */ }</span>,
+  <span class="k">"timestamp"</span>: <span class="s">"2026-08-25T10:15:30.482Z"</span>
+<span class="b">}</span></code></pre>
+    </div>
+  </div>
+
+  <!-- ---------- PUT event ---------- -->
+  <h2 id="put-event">12. Update an event</h2>
+  <div class="endpoint">
+    <div class="ep-head">
+      <span class="verb put">PUT</span>
+      <span class="path">/api/event/{uuid}</span>
+      <span class="badge auth">auth required</span>
+    </div>
+    <div class="ep-desc">Replaces an event. Body is the same as <a href="#event">POST /api/event</a> (<code>name</code>, <code>description</code>, <code>eventDate</code>, <code>images</code>, <code>documents</code>). <code>createdBy</code> is ignored — the original author is kept.</div>
+    <div class="ep-body">
+      <div class="lbl">Response — 200 OK</div>
+<pre><code><span class="b">{</span>
+  <span class="k">"success"</span>: <span class="b">true</span>,
+  <span class="k">"message"</span>: <span class="s">"Event updated successfully"</span>,
+  <span class="k">"data"</span>: <span class="c">{ /* updated EventResponse */ }</span>,
+  <span class="k">"timestamp"</span>: <span class="s">"2026-08-25T10:15:30.482Z"</span>
+<span class="b">}</span></code></pre>
+    </div>
+  </div>
+
+  <!-- ---------- PUT message ---------- -->
+  <h2 id="put-message">13. Update a message</h2>
+  <div class="endpoint">
+    <div class="ep-head">
+      <span class="verb put">PUT</span>
+      <span class="path">/api/message/{uuid}</span>
+      <span class="badge auth">auth required</span>
+    </div>
+    <div class="ep-desc">Replaces a message. Body is the same as <a href="#message">POST /api/message</a> (<code>title</code>, <code>description</code>, <code>publishDate</code>, <code>fileUpload</code>, <code>publishStatus</code>).</div>
+    <div class="ep-body">
+      <div class="lbl">Response — 200 OK</div>
+<pre><code><span class="b">{</span>
+  <span class="k">"success"</span>: <span class="b">true</span>,
+  <span class="k">"message"</span>: <span class="s">"Message updated successfully"</span>,
+  <span class="k">"data"</span>: <span class="c">{ /* updated MessageResponse */ }</span>,
+  <span class="k">"timestamp"</span>: <span class="s">"2026-08-25T10:15:30.482Z"</span>
+<span class="b">}</span></code></pre>
+    </div>
+  </div>
+
+  <!-- ---------- PUT publication ---------- -->
+  <h2 id="put-publication">14. Update a publication</h2>
+  <div class="endpoint">
+    <div class="ep-head">
+      <span class="verb put">PUT</span>
+      <span class="path">/api/publication/{uuid}</span>
+      <span class="badge auth">auth required</span>
+    </div>
+    <div class="ep-desc">Replaces a publication. Body is the same as <a href="#publication">POST /api/publication</a> (<code>title</code>, <code>description</code>, <code>publishDate</code>, <code>fileUpload</code>, <code>publishStatus</code>).</div>
+    <div class="ep-body">
+      <div class="lbl">Response — 200 OK</div>
+<pre><code><span class="b">{</span>
+  <span class="k">"success"</span>: <span class="b">true</span>,
+  <span class="k">"message"</span>: <span class="s">"Publication updated successfully"</span>,
+  <span class="k">"data"</span>: <span class="c">{ /* updated PublicationResponse */ }</span>,
+  <span class="k">"timestamp"</span>: <span class="s">"2026-08-25T10:15:30.482Z"</span>
+<span class="b">}</span></code></pre>
+    </div>
+  </div>
+
+  <!-- ================= DELETE ENDPOINTS ================= -->
+  <h2 id="delete-endpoints">15–18. Delete endpoints (DELETE)</h2>
+  <p class="sub">Each resource can be permanently removed by UUID. All require authentication.
+  On success the response is the standard envelope with a message and no <code>data</code>;
+  an unknown <code>{uuid}</code> returns <span class="badge">404 Not Found</span>.</p>
+
+  <div class="endpoint">
+    <div class="ep-head">
+      <span class="verb delete">DELETE</span>
+      <span class="path">/api/member/{uuid}</span>
+      <span class="badge auth">auth required</span>
+    </div>
+    <div class="ep-desc">Deletes a member.</div>
+  </div>
+  <div class="endpoint">
+    <div class="ep-head">
+      <span class="verb delete">DELETE</span>
+      <span class="path">/api/event/{uuid}</span>
+      <span class="badge auth">auth required</span>
+    </div>
+    <div class="ep-desc">Deletes an event (its images/documents are removed with it).</div>
+  </div>
+  <div class="endpoint">
+    <div class="ep-head">
+      <span class="verb delete">DELETE</span>
+      <span class="path">/api/message/{uuid}</span>
+      <span class="badge auth">auth required</span>
+    </div>
+    <div class="ep-desc">Deletes a message.</div>
+  </div>
+  <div class="endpoint">
+    <div class="ep-head">
+      <span class="verb delete">DELETE</span>
+      <span class="path">/api/publication/{uuid}</span>
+      <span class="badge auth">auth required</span>
+    </div>
+    <div class="ep-desc">Deletes a publication.</div>
+    <div class="ep-body">
+      <div class="lbl">Response — 200 OK (shared shape for all four)</div>
+<pre><code><span class="b">{</span>
+  <span class="k">"success"</span>: <span class="b">true</span>,
+  <span class="k">"message"</span>: <span class="s">"Publication deleted successfully"</span>,
+  <span class="k">"timestamp"</span>: <span class="s">"2026-08-25T10:15:30.482Z"</span>
+<span class="b">}</span></code></pre>
+    </div>
+  </div>
+
+  <!-- ================= UPLOAD ================= -->
+  <h2 id="upload">19. Upload a file</h2>
+  <div class="endpoint">
+    <div class="ep-head">
+      <span class="verb post">POST</span>
+      <span class="path">/api/upload</span>
+      <span class="badge auth">auth required</span>
+    </div>
+    <div class="ep-desc">Uploads a single image or PDF to Cloudflare R2 and returns its public URL. Send as <code>multipart/form-data</code> with a <code>file</code> part. Images are stored under <code>uploads/img/</code>, PDFs under <code>uploads/documents/</code>. The returned <code>url</code> is what you store on a member / event / message / publication / notification.</div>
+    <div class="ep-body">
+      <div class="lbl">Request — multipart/form-data</div>
+<pre><code><span class="c">// field "file": the binary image or PDF</span>
+<span class="c">// allowed: JPG, PNG, WebP, GIF, PDF · max 10 MB</span>
+curl -X POST /api/upload \
+  -H <span class="s">"Authorization: Bearer &lt;token&gt;"</span> \
+  -F <span class="s">"file=@photo.png"</span></code></pre>
+      <div class="lbl">Response — 201 Created</div>
+<pre><code><span class="b">{</span>
+  <span class="k">"success"</span>: <span class="b">true</span>,
+  <span class="k">"message"</span>: <span class="s">"File uploaded successfully"</span>,
+  <span class="k">"data"</span>: <span class="b">{</span>
+    <span class="k">"url"</span>: <span class="s">"http://localhost:8080/api/files/uploads/img/…png"</span>,
+    <span class="k">"fileName"</span>: <span class="s">"photo.png"</span>,
+    <span class="k">"contentType"</span>: <span class="s">"image/png"</span>,
+    <span class="k">"size"</span>: <span class="n">20482</span>
+  <span class="b">}</span>,
+  <span class="k">"timestamp"</span>: <span class="s">"2026-08-25T10:15:30.482Z"</span>
+<span class="b">}</span></code></pre>
+      <div class="note">
+        The <code>url</code> is a direct R2 URL when <code>R2_PUBLIC_BASE_URL</code> is configured;
+        otherwise it points at the backend file proxy (below). Bad type / oversized files return
+        <span class="badge">400</span>.
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= FILES ================= -->
+  <h2 id="files">20. Serve an uploaded file</h2>
+  <div class="endpoint">
+    <div class="ep-head">
+      <span class="verb get">GET</span>
+      <span class="path">/api/files/{key}</span>
+      <span class="badge public">public</span>
+    </div>
+    <div class="ep-desc">Streams an uploaded object back from R2 with its original content type (public, read-only) so <code>&lt;img&gt;</code> tags and links work without a token. The <code>{key}</code> is the object path, e.g. <code>uploads/img/…png</code>. Returns <span class="badge">404</span> for an unknown key. Only used when no public R2 URL is configured.</div>
+  </div>
+
+  <!-- ================= NOTIFICATION ================= -->
+  <h2 id="notification">21. Notifications (title + PDF)</h2>
+  <div class="endpoint">
+    <div class="ep-head">
+      <span class="verb post">POST</span>
+      <span class="path">/api/notification</span>
+      <span class="badge auth">auth required</span>
+    </div>
+    <div class="ep-desc">A notification is a <code>title</code> plus an optional PDF <code>document</code> URL. Also supports <code>GET /api/notification</code> (list, newest first), <code>GET /api/notification/{uuid}</code>, <code>PUT /api/notification/{uuid}</code> and <code>DELETE /api/notification/{uuid}</code> — all auth-required.</div>
+    <div class="ep-body">
+      <div class="lbl">Request body — fields</div>
+      <table>
+        <tr><th>Field</th><th>Type</th><th>Required</th><th>Rules</th></tr>
+        <tr><td><code>title</code></td><td>string</td><td class="req">required</td><td>not blank</td></tr>
+        <tr><td><code>document</code></td><td>string</td><td class="opt">optional</td><td>PDF URL (from <a href="#upload">/api/upload</a>)</td></tr>
+      </table>
+      <div class="lbl">Response — 201 Created</div>
+<pre><code><span class="b">{</span>
+  <span class="k">"success"</span>: <span class="b">true</span>,
+  <span class="k">"message"</span>: <span class="s">"Notification created successfully"</span>,
+  <span class="k">"data"</span>: <span class="b">{</span>
+    <span class="k">"uuid"</span>: <span class="s">"e9f78649-0057-4b25-acee-88498b745a76"</span>,
+    <span class="k">"title"</span>: <span class="s">"Verification schedule — district camps"</span>,
+    <span class="k">"document"</span>: <span class="s">"http://localhost:8080/api/files/uploads/documents/…pdf"</span>,
+    <span class="k">"createdAt"</span>: <span class="s">"2026-08-25T10:15:30.482Z"</span>,
+    <span class="k">"updatedAt"</span>: <span class="s">"2026-08-25T10:15:30.482Z"</span>
+  <span class="b">}</span>,
+  <span class="k">"timestamp"</span>: <span class="s">"2026-08-25T10:15:30.482Z"</span>
+<span class="b">}</span></code></pre>
+    </div>
+  </div>
+
+  <!-- ================= CATEGORY ================= -->
+  <h2 id="category">22. Member categories &amp; council directory</h2>
+  <div class="endpoint">
+    <div class="ep-head">
+      <span class="verb post">POST</span>
+      <span class="path">/api/category</span>
+      <span class="badge auth">auth required</span>
+    </div>
+    <div class="ep-desc">A category groups members — either the council executive or a professional representative group. Create / update / delete require auth. Deleting a category detaches (does not delete) its members.</div>
+    <div class="ep-body">
+      <div class="lbl">Request body — fields</div>
+      <table>
+        <tr><th>Field</th><th>Type</th><th>Required</th><th>Rules</th></tr>
+        <tr><td><code>name</code></td><td>string</td><td class="req">required</td><td>not blank</td></tr>
+        <tr><td><code>priority</code></td><td>int</td><td class="opt">optional</td><td>display order · defaults to <code>0</code></td></tr>
+        <tr><td><code>type</code></td><td>enum</td><td class="req">required</td><td><code>EXECUTIVE</code> · <code>PROFESSIONAL</code></td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="endpoint">
+    <div class="ep-head">
+      <span class="verb get">GET</span>
+      <span class="path">/api/category</span>
+      <span class="badge public">public</span>
+    </div>
+    <div class="ep-desc">Public, read-only. Returns every category (ordered by type then priority) with its members nested (ordered by member priority) — the whole council directory in one call. <code>GET /api/category/{uuid}</code> returns a single category the same way.</div>
+    <div class="ep-body">
+      <div class="lbl">Response — 200 OK</div>
+<pre><code><span class="b">{</span>
+  <span class="k">"success"</span>: <span class="b">true</span>,
+  <span class="k">"message"</span>: <span class="s">"Categories fetched successfully"</span>,
+  <span class="k">"data"</span>: [
+    <span class="b">{</span>
+      <span class="k">"uuid"</span>: <span class="s">"9513f842-d4f5-402f-87a6-f1e444d4b5c7"</span>,
+      <span class="k">"name"</span>: <span class="s">"Medical Laboratory &amp; Life Sciences"</span>,
+      <span class="k">"priority"</span>: <span class="n">1</span>,
+      <span class="k">"type"</span>: <span class="s">"PROFESSIONAL"</span>,
+      <span class="k">"members"</span>: [
+        <span class="b">{</span>
+          <span class="k">"uuid"</span>: <span class="s">"a1b2c3d4-…"</span>,
+          <span class="k">"name"</span>: <span class="s">"Ms. Chokie Lepcha"</span>,
+          <span class="k">"designation"</span>: <span class="s">"Sr. Medical Lab Technologist"</span>,
+          <span class="k">"photo"</span>: <span class="b">null</span>,
+          <span class="k">"description"</span>: <span class="s">"Department of Pathology, STNM …"</span>,
+          <span class="k">"priority"</span>: <span class="n">1</span>,
+          <span class="k">"categoryUuid"</span>: <span class="s">"9513f842-…"</span>,
+          <span class="k">"categoryName"</span>: <span class="s">"Medical Laboratory &amp; Life Sciences"</span>
+        <span class="b">}</span>
+      ]
+    <span class="b">}</span>
+  ],
+  <span class="k">"timestamp"</span>: <span class="s">"2026-08-25T10:15:30.482Z"</span>
+<span class="b">}</span></code></pre>
+    </div>
+  </div>
+
   <div class="note" style="border-left-color:var(--accent)">
     <b>Data type notes.</b>
     <code>uuid</code> / <code>createdBy</code> are UUID strings ·
@@ -384,7 +914,7 @@
 </div>
 
 <footer>
-  Generated from source · Sikkim Allied Health Care Council Backend · 5 endpoints · 2026-08-24
+  Generated from source · Sikkim Allied Health Care Council Backend · 34 endpoints · 2026-08-25
 </footer>
 
 </body>

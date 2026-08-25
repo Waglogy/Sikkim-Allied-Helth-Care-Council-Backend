@@ -5,9 +5,14 @@ import in.sikkim_allied_health_care_council.server.dto.announcements.MessageResp
 import in.sikkim_allied_health_care_council.server.models.admin.AdminUser;
 import in.sikkim_allied_health_care_council.server.models.announcements.Messages;
 import in.sikkim_allied_health_care_council.server.repositories.MessageRepository;
+import in.sikkim_allied_health_care_council.server.exceptions.ResourceNotFoundException;
 import in.sikkim_allied_health_care_council.server.security.CurrentAdminProvider;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.UUID;
 
 @Service
 public class MessageService {
@@ -28,11 +33,49 @@ public class MessageService {
                 .title(createMessage.title())
                 .description(createMessage.description())
                 .publishDate(createMessage.publishDate())
+                .photo(createMessage.photo())
                 .fileUpload(createMessage.fileUpload())
                 .publishStatus(createMessage.publishStatus())
                 .createdBy(createdBy)
                 .build();
 
         return MessageResponse.from(messageRepository.save(message));
+    }
+
+    @Transactional(readOnly = true)
+    public List<MessageResponse> getAllMessages() {
+        return messageRepository.findAllByOrderByCreatedAtDesc()
+                .stream()
+                .map(MessageResponse::from)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public MessageResponse getMessageByUuid(UUID uuid) {
+        Messages message = messageRepository.findByUuid(uuid)
+                .orElseThrow(() -> new ResourceNotFoundException("Message not found."));
+        return MessageResponse.from(message);
+    }
+
+    @Transactional
+    public MessageResponse updateMessage(UUID uuid, @Valid CreateMessage updateMessage) {
+        Messages message = messageRepository.findByUuid(uuid)
+                .orElseThrow(() -> new ResourceNotFoundException("Message not found."));
+
+        message.setTitle(updateMessage.title());
+        message.setDescription(updateMessage.description());
+        message.setPublishDate(updateMessage.publishDate());
+        message.setPhoto(updateMessage.photo());
+        message.setFileUpload(updateMessage.fileUpload());
+        message.setPublishStatus(updateMessage.publishStatus());
+
+        return MessageResponse.from(messageRepository.save(message));
+    }
+
+    @Transactional
+    public void deleteMessage(UUID uuid) {
+        Messages message = messageRepository.findByUuid(uuid)
+                .orElseThrow(() -> new ResourceNotFoundException("Message not found."));
+        messageRepository.delete(message);
     }
 }

@@ -40,4 +40,9 @@ public class Members {
 
     @Column(name = "order_priority")
     private int orderPriority;
+
+    /** The category this member is listed under (executive or professional). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private Category category;
 }

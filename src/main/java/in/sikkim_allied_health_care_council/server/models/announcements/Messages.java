@@ -25,6 +25,8 @@ public class Messages extends AnnouncementBase {
     @Column(name = "publish_date")
     private LocalDateTime publishDate;
 
+    private String photo;
+
     @Column(name = "file_upload")
     private String fileUpload;
 

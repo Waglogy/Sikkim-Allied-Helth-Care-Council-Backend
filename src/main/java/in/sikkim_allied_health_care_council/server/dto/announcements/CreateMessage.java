@@ -13,6 +13,8 @@ public record CreateMessage(
 
         LocalDateTime publishDate,
 
+        String photo,
+
         String fileUpload,
 
         boolean publishStatus

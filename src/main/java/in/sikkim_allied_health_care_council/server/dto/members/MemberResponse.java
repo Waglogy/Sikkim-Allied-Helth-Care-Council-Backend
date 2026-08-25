@@ -13,8 +13,10 @@ public record MemberResponse(
         String name,
         String designation,
         String photo,
-        String profileDescription,
-        int orderPriority
+        String description,
+        int priority,
+        UUID categoryUuid,
+        String categoryName
 ) {
 
     public static MemberResponse from(Members member) {
@@ -24,7 +26,9 @@ public record MemberResponse(
                 member.getDesignation(),
                 member.getPhoto(),
                 member.getProfileDescription(),
-                member.getOrderPriority()
+                member.getOrderPriority(),
+                member.getCategory() != null ? member.getCategory().getUuid() : null,
+                member.getCategory() != null ? member.getCategory().getName() : null
         );
     }
 }

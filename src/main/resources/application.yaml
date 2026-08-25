@@ -13,7 +13,23 @@ spring:
     hibernate:
       ddl-auto: update
 
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+
 app:
   jwt:
     secret: ${JWT_SECRET:dev-only-change-me-dev-only-change-me-32bytes}
     expiration-minutes: 60
+  cors:
+    # Comma-separated browser origins allowed to call the API.
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+  r2:
+    # Cloudflare R2 (S3-compatible) object storage for image / file uploads.
+    endpoint: ${R2_ENDPOINT:https://9c458ecc4d45326613ea952ddaedc251.r2.cloudflarestorage.com}
+    bucket: ${R2_BUCKET:sahcc-test}
+    access-key-id: ${R2_ACCESS_KEY_ID:}
+    secret-access-key: ${R2_SECRET_ACCESS_KEY:}
+    # Public URL files are served from (r2.dev subdomain or a custom domain).
+    public-base-url: ${R2_PUBLIC_BASE_URL:}
