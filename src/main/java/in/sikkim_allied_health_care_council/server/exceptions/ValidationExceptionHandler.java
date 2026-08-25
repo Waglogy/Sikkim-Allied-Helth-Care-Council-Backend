@@ -2,6 +2,7 @@ package in.sikkim_allied_health_care_council.server.exceptions;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -61,6 +62,20 @@ public class ValidationExceptionHandler {
                 .body(new ApiError(
                         false,
                         exception.getMessage(),
+                        Map.of()
+                ));
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ApiError> handleBadCredentials(
+            BadCredentialsException exception
+    ) {
+
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(new ApiError(
+                        false,
+                        "Invalid email or password.",
                         Map.of()
                 ));
     }

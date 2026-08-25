@@ -11,4 +11,5 @@ import java.util.UUID;
 public interface AdminUserRepository extends JpaRepository<AdminUser, Long> {
 
     Optional<AdminUser> findByUuid(UUID uuid);
+    Optional<AdminUser> findByEmail(String email);
 }

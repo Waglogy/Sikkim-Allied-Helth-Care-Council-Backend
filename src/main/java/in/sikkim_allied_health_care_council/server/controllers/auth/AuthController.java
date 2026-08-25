@@ -3,6 +3,7 @@ package in.sikkim_allied_health_care_council.server.controllers.auth;
 import in.sikkim_allied_health_care_council.server.dto.ApiResponse;
 import in.sikkim_allied_health_care_council.server.dto.auth.AdminResponse;
 import in.sikkim_allied_health_care_council.server.dto.auth.CreateAdmin;
+import in.sikkim_allied_health_care_council.server.dto.auth.LoginRequest;
 import in.sikkim_allied_health_care_council.server.services.auth.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -31,6 +32,15 @@ public class AuthController {
         AdminResponse created = authService.signupAdmin(admin);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Admin signup successful.", created));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(
+            @Valid @RequestBody LoginRequest request
+    ) {
+
+        AdminResponse admin = authService.login(request);
+        return ResponseEntity.ok(ApiResponse.success("Login successful.", admin));
     }
 
 }
