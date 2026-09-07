@@ -14,4 +14,7 @@ public interface MessageRepository extends JpaRepository<Messages, Long> {
     Optional<Messages> findByUuid(UUID uuid);
 
     List<Messages> findAllByOrderByCreatedAtDesc();
+
+    /** Ordered for display: lowest priority first, newest as tie-breaker. */
+    List<Messages> findAllByOrderByOrderPriorityAscCreatedAtDesc();
 }

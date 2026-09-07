@@ -32,4 +32,8 @@ public class Messages extends AnnouncementBase {
 
     @Column(nullable = false)
     private boolean publishStatus;
+
+    /** Display order — lower value is shown first. */
+    @Column(name = "order_priority")
+    private int orderPriority;
 }

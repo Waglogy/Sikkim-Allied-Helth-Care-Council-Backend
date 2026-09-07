@@ -14,6 +14,7 @@ public record MessageResponse(
         String photo,
         String fileUpload,
         boolean publishStatus,
+        int priority,
         UUID createdBy,
         Instant createdAt,
         Instant updatedAt
@@ -28,6 +29,7 @@ public record MessageResponse(
                 message.getPhoto(),
                 message.getFileUpload(),
                 message.isPublishStatus(),
+                message.getOrderPriority(),
                 message.getCreatedBy().getUuid(),
                 message.getCreatedAt(),
                 message.getUpdatedAt()

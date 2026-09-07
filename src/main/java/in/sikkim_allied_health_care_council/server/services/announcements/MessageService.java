@@ -36,6 +36,7 @@ public class MessageService {
                 .photo(createMessage.photo())
                 .fileUpload(createMessage.fileUpload())
                 .publishStatus(createMessage.publishStatus())
+                .orderPriority(createMessage.priority())
                 .createdBy(createdBy)
                 .build();
 
@@ -44,7 +45,7 @@ public class MessageService {
 
     @Transactional(readOnly = true)
     public List<MessageResponse> getAllMessages() {
-        return messageRepository.findAllByOrderByCreatedAtDesc()
+        return messageRepository.findAllByOrderByOrderPriorityAscCreatedAtDesc()
                 .stream()
                 .map(MessageResponse::from)
                 .toList();
@@ -68,6 +69,7 @@ public class MessageService {
         message.setPhoto(updateMessage.photo());
         message.setFileUpload(updateMessage.fileUpload());
         message.setPublishStatus(updateMessage.publishStatus());
+        message.setOrderPriority(updateMessage.priority());
 
         return MessageResponse.from(messageRepository.save(message));
     }

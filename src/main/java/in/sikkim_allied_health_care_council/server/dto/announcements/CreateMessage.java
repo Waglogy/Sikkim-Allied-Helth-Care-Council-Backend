@@ -17,6 +17,8 @@ public record CreateMessage(
 
         String fileUpload,
 
-        boolean publishStatus
+        boolean publishStatus,
+
+        int priority
 ) {
 }
