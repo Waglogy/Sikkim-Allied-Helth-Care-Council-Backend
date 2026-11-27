@@ -9,6 +9,9 @@ import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,6 +29,7 @@ public class NotificationService {
         Notification notification = Notification.builder()
                 .title(createNotification.title())
                 .document(createNotification.document())
+                .date(resolveDate(createNotification.date()))
                 .build();
 
         return NotificationResponse.from(notificationRepository.save(notification));
@@ -36,6 +40,8 @@ public class NotificationService {
         return notificationRepository.findAllByOrderByCreatedAtDesc()
                 .stream()
                 .map(NotificationResponse::from)
+                // Newest publication date first; createdAt order (already desc) breaks ties.
+                .sorted(Comparator.comparing(NotificationResponse::date).reversed())
                 .toList();
     }
 
@@ -53,6 +59,7 @@ public class NotificationService {
 
         notification.setTitle(updateNotification.title());
         notification.setDocument(updateNotification.document());
+        notification.setDate(resolveDate(updateNotification.date()));
 
         return NotificationResponse.from(notificationRepository.save(notification));
     }
@@ -62,5 +69,9 @@ public class NotificationService {
         Notification notification = notificationRepository.findByUuid(uuid)
                 .orElseThrow(() -> new ResourceNotFoundException("Notification not found."));
         notificationRepository.delete(notification);
+    }
+
+    private static LocalDate resolveDate(LocalDate date) {
+        return date != null ? date : LocalDate.now(ZoneId.of("Asia/Kolkata"));
     }
 }

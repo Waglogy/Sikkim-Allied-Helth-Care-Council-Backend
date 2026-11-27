@@ -124,7 +124,7 @@
       <li><a href="#delete-endpoints">DELETE /api/publication/{uuid}</a> — Delete a publication <span class="badge auth">auth</span></li>
       <li><a href="#upload">POST /api/upload</a> — Upload an image / PDF <span class="badge auth">auth</span></li>
       <li><a href="#files">GET /api/files/**</a> — Serve an uploaded file <span class="badge public">public</span></li>
-      <li><a href="#notification">POST · GET · PUT · DELETE /api/notification</a> — Notification (title + PDF) <span class="badge auth">auth</span></li>
+      <li><a href="#notification">POST · GET · PUT · DELETE /api/notification</a> — Notification (title + date + PDF) <span class="badge auth">auth</span></li>
       <li><a href="#category">POST · PUT · DELETE /api/category</a> — Manage member categories <span class="badge auth">auth</span></li>
       <li><a href="#category">GET /api/category</a> · <a href="#category">GET /api/category/{uuid}</a> — Council directory (grouped) <span class="badge public">public</span></li>
     </ul>
@@ -817,20 +817,21 @@ curl -X POST /api/upload \
   </div>
 
   <!-- ================= NOTIFICATION ================= -->
-  <h2 id="notification">21. Notifications (title + PDF)</h2>
+  <h2 id="notification">21. Notifications (title + date + PDF)</h2>
   <div class="endpoint">
     <div class="ep-head">
       <span class="verb post">POST</span>
       <span class="path">/api/notification</span>
       <span class="badge auth">auth required</span>
     </div>
-    <div class="ep-desc">A notification is a <code>title</code> plus an optional PDF <code>document</code> URL. Also supports <code>GET /api/notification</code> (list, newest first), <code>GET /api/notification/{uuid}</code>, <code>PUT /api/notification/{uuid}</code> and <code>DELETE /api/notification/{uuid}</code> — all auth-required.</div>
+    <div class="ep-desc">A notification is a <code>title</code>, a publication <code>date</code> and an optional PDF <code>document</code> URL. Also supports <code>GET /api/notification</code> (list, newest <code>date</code> first), <code>GET /api/notification/{uuid}</code>, <code>PUT /api/notification/{uuid}</code> and <code>DELETE /api/notification/{uuid}</code> — all auth-required.</div>
     <div class="ep-body">
       <div class="lbl">Request body — fields</div>
       <table>
         <tr><th>Field</th><th>Type</th><th>Required</th><th>Rules</th></tr>
         <tr><td><code>title</code></td><td>string</td><td class="req">required</td><td>not blank</td></tr>
         <tr><td><code>document</code></td><td>string</td><td class="opt">optional</td><td>PDF URL (from <a href="#upload">/api/upload</a>)</td></tr>
+        <tr><td><code>date</code></td><td>string</td><td class="opt">optional</td><td><code>yyyy-MM-dd</code>; defaults to today (Asia/Kolkata) when omitted</td></tr>
       </table>
       <div class="lbl">Response — 201 Created</div>
 <pre><code><span class="b">{</span>
@@ -840,6 +841,7 @@ curl -X POST /api/upload \
     <span class="k">"uuid"</span>: <span class="s">"e9f78649-0057-4b25-acee-88498b745a76"</span>,
     <span class="k">"title"</span>: <span class="s">"Verification schedule — district camps"</span>,
     <span class="k">"document"</span>: <span class="s">"http://localhost:8080/api/files/uploads/documents/…pdf"</span>,
+    <span class="k">"date"</span>: <span class="s">"2026-08-25"</span>,
     <span class="k">"createdAt"</span>: <span class="s">"2026-08-25T10:15:30.482Z"</span>,
     <span class="k">"updatedAt"</span>: <span class="s">"2026-08-25T10:15:30.482Z"</span>
   <span class="b">}</span>,

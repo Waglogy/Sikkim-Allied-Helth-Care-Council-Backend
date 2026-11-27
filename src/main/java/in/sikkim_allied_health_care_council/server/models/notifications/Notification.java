@@ -11,6 +11,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Getter
@@ -35,6 +36,10 @@ public class Notification {
 
     /** Public URL of the attached PDF document. */
     private String document;
+
+    /** Publication date shown on the notice (editable; nullable for legacy rows). */
+    @Column(name = "notification_date")
+    private LocalDate date;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
